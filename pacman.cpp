@@ -423,3 +423,110 @@ void updateGhosts() {
         }
     }
 }
+
+
+
+
+
+void update(int v) {
+    if (currentState == PLAYING) {
+        updatePacman();
+        updateGhosts();
+        gameTime = (glutGet(GLUT_ELAPSED_TIME) / 1000.0f) - startTime;
+        elapsedSeconds = (int)gameTime;
+    }
+    glutPostRedisplay();
+    glutTimerFunc(16, update, 0);
+}
+
+void keyboard(unsigned char key, int x, int y) {
+    if (currentState == MENU) {
+        if (key == 27) exit(0);  // ESC to exit
+        if (key == ' ' || key == 13) {  // Space or Enter to select
+            if (menuSelection == 0) {
+                resetGame();
+                currentState = PLAYING;
+            }
+            else if (menuSelection == 1) {
+                currentState = HIGH_SCORES;
+            }
+            else if (menuSelection == 2) {
+                exit(0);
+            }
+        }
+    }
+    else if (currentState == HIGH_SCORES) {
+        if (key == ' ' || key == 13 || key == 27) {  // Space, Enter or ESC to go back
+            menuSelection = 0;
+            currentState = MENU;
+        }
+    }
+    else if (currentState == PLAYING) {
+        if (key == ' ') currentState = PAUSED;  // SPACE to pause
+        if (key == 27) {  // ESC to go to menu
+            menuSelection = 0;
+            currentState = MENU;
+        }
+    }
+    else if (currentState == PAUSED) {
+        if (key == ' ') currentState = PLAYING;  // SPACE to resume
+        if (key == 'm' || key == 'M') {
+            menuSelection = 0;
+            currentState = MENU;
+        }
+    }
+    else if (currentState == GAME_OVER || currentState == WIN) {
+        if (key == ' ') {  // Space to play again
+            resetGame();
+            currentState = PLAYING;
+        }
+        if (key == 'm' || key == 'M') {  // M to go to menu
+            menuSelection = 0;
+            currentState = MENU;
+        }
+        if (key == 27) exit(0);  // ESC to exit
+    }
+}
+
+void specialKeys(int key, int x, int y) {
+    if (currentState == MENU || currentState == HIGH_SCORES) {
+        // Menu navigation
+        if (key == GLUT_KEY_UP) {
+            menuSelection = (menuSelection - 1 + 3) % 3;
+        }
+        else if (key == GLUT_KEY_DOWN) {
+            menuSelection = (menuSelection + 1) % 3;
+        }
+    }
+    else if (currentState == PLAYING) {
+        // Pacman movement
+        if (key == GLUT_KEY_RIGHT) pacman.nextDirection = 0;
+        else if (key == GLUT_KEY_UP) pacman.nextDirection = 1;
+        else if (key == GLUT_KEY_LEFT) pacman.nextDirection = 2;
+        else if (key == GLUT_KEY_DOWN) pacman.nextDirection = 3;
+    }
+}
+
+void init() {
+    glClearColor(0, 0, 0, 1);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
+    glMatrixMode(GL_MODELVIEW);
+    srand(time(NULL));
+    loadHighScores();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    glutCreateWindow("Improved Pacman");
+    init();
+    glutDisplayFunc(display);
+    glutKeyboardFunc(keyboard);
+    glutSpecialFunc(specialKeys);
+    glutTimerFunc(0, update, 0);
+    glutMainLoop();
+    return 0;
+}
