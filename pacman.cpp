@@ -367,3 +367,59 @@ void updatePacman() {
         if (dotsEaten >= totalDots) currentState = WIN;
     }
 }
+
+
+void updateGhosts() {
+    // Increase ghost speed based on dots eaten (difficulty progression)
+    float speedIncrease = (dotsEaten / (float)totalDots) * 0.04f;
+
+    for (int i = 0; i < 4; i++) {
+        struct Ghost* g = &ghosts[i];
+        g->speed = g->baseSpeed + speedIncrease;
+
+        // Simple chase AI: move towards Pacman with some randomness
+        float dx = pacman.x - g->x;
+        float dy = pacman.y - g->y;
+        float dist = sqrt(dx * dx + dy * dy);
+
+        int preferredDir = -1;
+        if (dist < 5.0f) {  // Only chase if within range
+            if (fabs(dx) > fabs(dy)) {
+                preferredDir = (dx > 0) ? 0 : 2;  // Right or Left
+            }
+            else {
+                preferredDir = (dy > 0) ? 3 : 1;  // Down or Up
+            }
+        }
+
+        // Try preferred direction, otherwise random
+        if (preferredDir != -1 && canMove(g->x, g->y, preferredDir) && rand() % 100 < 70) {
+            g->direction = preferredDir;
+        }
+        else if (!canMove(g->x, g->y, g->direction) || rand() % 100 < 5) {
+            g->direction = rand() % 4;
+        }
+
+        if (canMove(g->x, g->y, g->direction)) {
+            if (g->direction == 0) g->x += g->speed;
+            else if (g->direction == 1) g->y -= g->speed;
+            else if (g->direction == 2) g->x -= g->speed;
+            else if (g->direction == 3) g->y += g->speed;
+        }
+
+        // Collision detection with Pacman
+        float dist2 = sqrt(pow(g->x - pacman.x, 2) + pow(g->y - pacman.y, 2));
+        if (dist2 < 0.7f) {
+            pacman.lives--;
+            if (pacman.lives <= 0) {
+                currentState = GAME_OVER;
+                addHighScore(pacman.score, elapsedSeconds);
+            }
+            else {
+                pacman.x = 1.0f; pacman.y = 1.0f;
+                pacman.direction = -1; pacman.nextDirection = -1;
+                initGhosts();
+            }
+        }
+    }
+}
