@@ -424,9 +424,158 @@ void updateGhosts() {
     }
 }
 
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    if (currentState == MENU) {
+        // Title area with border
+        drawBorderedBox(100, 40, 600, 100);
+        glColor3f(1, 1, 0);
+        drawText(220, 70, "PACMAN GAME", 2.0f);
 
+        // Msenu selection box
+        float boxY = 240 + menuSelection * 60;
+        glColor3f(1, 0.8f, 0);
+        drawBorderedBox(120, boxY, 560, 50);
 
+        // Menu options with highlighting
+        for (int i = 0; i < 3; i++) {
+            float yPos = 265 + i * 60;
+            if (i == menuSelection) {
+                glColor3f(0, 0, 0);  // Black text on highlight
+                drawText(350, yPos, i == 0 ? "START GAME" : (i == 1 ? "HIGH SCORES" : "EXIT"), 1.3f);
+            }
+            else {
+                glColor3f(1, 1, 1);
+                drawText(350, yPos, i == 0 ? "START GAME" : (i == 1 ? "HIGH SCORES" : "EXIT"), 1.2f);
+            }
+        }
 
+        // Controls info
+        glColor3f(0.8f, 0.8f, 1.0f);
+        drawText(120, 540, "UP/DOWN: Select  |  SPACE: Confirm  |  ESC: Exit", 0.8f);
+    }
+    else if (currentState == HIGH_SCORES) {
+        // Title box
+        drawBorderedBox(150, 30, 500, 60);
+        glColor3f(1, 1, 0);
+        drawText(300, 55, "HIGH SCORES", 1.8f);
+
+        glColor3f(1, 1, 1);
+        if (numHighScores == 0) {
+            drawText(250, 250, "No high scores yet!", 1.2f);
+        }
+        else {
+            for (int i = 0; i < numHighScores; i++) {
+                char buf[120];
+                sprintf(buf, "%d.  Score: %d  |  Time: %.1fs", i + 1, highScores[i].score, highScores[i].time);
+                float yPos = 130 + i * 50;
+                if (i == 0) glColor3f(1, 0.8f, 0);  // Gold for first place
+                else if (i == 1) glColor3f(0.7f, 0.7f, 0.7f);  // Silver
+                else if (i == 2) glColor3f(0.8f, 0.5f, 0);  // Bronze
+                else glColor3f(1, 1, 1);
+                drawText(180, yPos, buf, 1.1f);
+            }
+        }
+        glColor3f(0.8f, 0.8f, 1.0f);
+        drawText(150, 560, "SPACE: Return to Menu  |  ESC: Exit", 0.8f);
+    }
+    else if (currentState == PLAYING) {
+        drawMaze();
+        drawPacman();
+        for (int i = 0; i < 4; i++) drawGhost(&ghosts[i]);
+
+        // Top HUD bar
+        glColor3f(0.1f, 0.1f, 0.3f);
+        drawRectangle(0, 0, WINDOW_WIDTH, 28);
+        glColor3f(0.3f, 0.5f, 1.0f);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(0, 0);
+        glVertex2f(WINDOW_WIDTH, 0);
+        glVertex2f(WINDOW_WIDTH, 28);
+        glVertex2f(0, 28);
+        glEnd();
+
+        // Status text
+        char buf[100];
+        sprintf(buf, "SCORE: %d  |  LIVES: %d  |  TIME: %ds  |  DOTS: %d/%d", pacman.score, pacman.lives, elapsedSeconds, dotsEaten, totalDots);
+        glColor3f(1, 1, 0);
+        drawText(40, 12, buf, 0.85f);
+
+        // Bottom HUD bar
+        glColor3f(0.1f, 0.1f, 0.3f);
+        drawRectangle(0, WINDOW_HEIGHT - 28, WINDOW_WIDTH, 28);
+        glColor3f(0.3f, 0.5f, 1.0f);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(0, WINDOW_HEIGHT - 28);
+        glVertex2f(WINDOW_WIDTH, WINDOW_HEIGHT - 28);
+        glVertex2f(WINDOW_WIDTH, WINDOW_HEIGHT);
+        glVertex2f(0, WINDOW_HEIGHT);
+        glEnd();
+
+        glColor3f(0.8f, 0.8f, 1.0f);
+        drawText(50, WINDOW_HEIGHT - 15, "SPACE: Pause  |  ESC: Menu", 0.8f);
+    }
+    else if (currentState == PAUSED) {
+        drawMaze();
+        drawPacman();
+        for (int i = 0; i < 4; i++) drawGhost(&ghosts[i]);
+
+        // Semi-transparent overlay
+        glColor3f(0, 0, 0);
+        glBegin(GL_QUADS);
+        glVertex2f(0, 0);
+        glVertex2f(WINDOW_WIDTH, 0);
+        glVertex2f(WINDOW_WIDTH, WINDOW_HEIGHT);
+        glVertex2f(0, WINDOW_HEIGHT);
+        glEnd();
+
+        // Pause box
+        drawBorderedBox(200, 200, 400, 200);
+        glColor3f(1, 1, 0);
+        drawText(280, 240, "PAUSED", 2.0f);
+        glColor3f(1, 1, 1);
+        drawText(240, 320, "Press SPACE to resume", 1.2f);
+        drawText(260, 360, "Press M for menu", 1.2f);
+    }
+    else if (currentState == GAME_OVER) {
+        // Semi-transparent overlay
+        glColor3f(0, 0, 0);
+        drawRectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        // Game Over box
+        drawBorderedBox(150, 150, 500, 300);
+        glColor3f(1, 0, 0);
+        drawText(200, 190, "GAME OVER", 2.2f);
+        glColor3f(1, 1, 1);
+        char buf[100];
+        sprintf(buf, "Final Score: %d", pacman.score);
+        drawText(220, 270, buf, 1.3f);
+        sprintf(buf, "Time Survived: %ds", elapsedSeconds);
+        drawText(200, 310, buf, 1.2f);
+        drawText(220, 370, "SPACE: Try Again", 1.2f);
+        drawText(240, 410, "M: Menu", 1.2f);
+    }
+    else if (currentState == WIN) {
+        // Semi-transparent overlay
+        glColor3f(0, 0, 0);
+        drawRectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        // Victory box
+        drawBorderedBox(150, 100, 500, 400);
+        glColor3f(0, 1, 0);
+        drawText(200, 150, "YOU WIN!", 2.5f);
+        glColor3f(1, 1, 1);
+        char buf[100];
+        sprintf(buf, "Score: %d Points", pacman.score);
+        drawText(240, 230, buf, 1.3f);
+        sprintf(buf, "Time: %ds", elapsedSeconds);
+        drawText(280, 280, buf, 1.2f);
+        drawText(220, 350, "All Dots Collected!", 1.2f);
+        drawText(210, 410, "SPACE: Next Level", 1.2f);
+        drawText(240, 450, "M: Menu", 1.2f);
+    }
+    glutSwapBuffers();
+}
 
 void update(int v) {
     if (currentState == PLAYING) {
