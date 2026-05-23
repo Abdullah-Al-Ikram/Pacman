@@ -55,3 +55,4 @@ float startTime = 0;
 int elapsedSeconds = 0;
 struct HighScore highScores[5] = { 0 };
 int numHighScores = 0;
+
